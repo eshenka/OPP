@@ -4,7 +4,7 @@
 #include <mpi.h>
 #include <math.h>
 
-#define EPSILON 0.01
+#define EPSILON 0.1
 #define TAU 0.00001
 
 double* create_vector(int size) {
@@ -42,16 +42,13 @@ double norm(double* vector, int size) {
     return sqrt(init_norm);
 }
 
-double* sub(double* a, double* b, int size, int wrank) {
-    double* result = create_vector(size);
+void sub(double* a, double* b, int size, int wrank) {
     for (int i = 0; i < size; i++) {
-        result[i] = a[i] - b[wrank + 1 + i];
+        a[i] = a[i] - b[wrank + 1 + i];
     }
-    return result;
 }
 
-double* matrix_mult(double* matrix, double* vector, int m, int n) {
-    double* result = create_vector(m);
+void matrix_mult(double* matrix, double* vector, int m, int n, double* result) {
     for (int i = 0; i < m; i++) {
         int sum = 0;
         for (int j = 0; j < n; j++) {
@@ -60,7 +57,6 @@ double* matrix_mult(double* matrix, double* vector, int m, int n) {
 
         result[i] = sum;
     }
-    return result;
 }
 
 void const_mult(double n, double* vector, int size) {
@@ -71,11 +67,11 @@ void const_mult(double n, double* vector, int size) {
 
 bool is_solved(double* A, double* b, double* x, int m, int n, int wrank) {
     double* result = create_vector(m);
-    result = matrix_mult(A, x, m, n);
-    result = sub(result, b, m, wrank);
+    matrix_mult(A, x, m, n, result);
+    sub(result, b, m, wrank);
 
     double result_norm = norm(result, m);
-    double b_norm = norm(b, n); //idk which norm is OK
+    double b_norm = norm(b, m); //idk which norm is OK
 
     free(result);
 
@@ -101,8 +97,8 @@ double* solution(double* A, double* b, int vec_size, int rows_num, int wsize, in
 
     while(!is_solved(A, b, x, rows_num, vec_size, wrank)) {
         double* result = create_vector(rows_num);
-        result = matrix_mult(A, x, rows_num, vec_size);
-        result = sub(result, b, rows_num, wrank);
+        matrix_mult(A, x, rows_num, vec_size, result);
+        sub(result, b, rows_num, wrank);
         const_mult(TAU, result, rows_num);
 
         new_x(x, result, rows_num);
