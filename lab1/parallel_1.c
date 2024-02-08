@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <mpi.h>
 #include <math.h>
+#include <string.h>
 
 #define EPSILON 0.0001
 #define TAU 0.00001
@@ -107,9 +108,7 @@ double* solution(double* A, double* b, int vec_size, int rows_num, int wsize, in
         new_x(x, result, rows_num, shift);
 
         double* share_x = (double*) malloc(vec_size * sizeof(double));
-        for (int i = 0; i < rows_num; i++) {
-            share_x[i] = x[shift + i];
-        }
+        memcpy(share_x, x + shift, rows_num * sizeof(double));
         MPI_Allgatherv(share_x, rows_num, MPI_DOUBLE, x, nums, inds, MPI_DOUBLE, MPI_COMM_WORLD);
         free(share_x);
 
@@ -123,7 +122,7 @@ double* solution(double* A, double* b, int vec_size, int rows_num, int wsize, in
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
 
-    const int vec_size = 5;
+    const int vec_size = 10;
     
     int wrank;
     MPI_Comm_rank(MPI_COMM_WORLD, &wrank);
