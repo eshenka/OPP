@@ -12,12 +12,13 @@ double* create_vector(int size) {
     return vector;
 }
 
-void initialize_matrix(double* matrix, int n, int m, int wrank) {
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < m; j++) {
-            matrix[i * n + j] = 1.0;
-        }
-        matrix[i * n + i + wrank] = 2.0;
+void initialize_matrix(double* matrix, int n, int m, int shift) {
+    for (int i = 0; i < n * m; i++) {
+        matrix[i] = 1.0;
+    }
+
+    for (int i = 0; i < m; i++) {
+        matrix[i * n + i + shift] = 2.0;
     }
 }
 
@@ -115,7 +116,7 @@ double* solution(double* A, double* b, int vec_size, int rows_num, int wsize, in
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
 
-    const int vec_size = 64;
+    const int vec_size = 5;
     
     int wrank;
     MPI_Comm_rank(MPI_COMM_WORLD, &wrank);
@@ -132,24 +133,26 @@ int main(int argc, char** argv) {
 
     // printf("rows_num = %d, wrank = %d\n", rows_num, wrank);
 
-    double* A = (double*) malloc(vec_size * rows_num * sizeof(double));
-    initialize_matrix(A, vec_size, rows_num, wrank);
-
-    double* result = solution(A, b, vec_size, rows_num, wsize, wrank);
-
-    double* x = create_vector(vec_size);
-
     int* nums = (int*) malloc(wsize * sizeof(int));
     int* inds = (int*) malloc(wsize * sizeof(int));
 
     for (int i = 0; i < wsize; i++) {
-        nums[i] = vec_size / wsize + ((wrank < (vec_size % wsize)) ? 1 : 0);
+        nums[i] = vec_size / wsize + ((i < (vec_size % wsize)) ? 1 : 0);
     }
 
     inds[0] = 0;
     for (int i = 0; i < wsize - 1; i++) {
         inds[i + 1] = nums[i] + inds[i]; 
     }
+
+    printf("%d %d\n", inds[wrank], wrank);
+
+    double* A = (double*) malloc(vec_size * rows_num * sizeof(double));
+    initialize_matrix(A, vec_size, rows_num, inds[wrank]);
+
+    double* result = solution(A, b, vec_size, rows_num, wsize, wrank);
+
+    double* x = create_vector(vec_size);
 
     MPI_Allgatherv(result, rows_num, MPI_DOUBLE, x, nums, inds, MPI_DOUBLE, MPI_COMM_WORLD);
 
