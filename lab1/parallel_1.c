@@ -43,9 +43,9 @@ double norm(double* vector, int size) {
     return sqrt(init_norm);
 }
 
-void sub(double* a, double* b, int size, int wrank) {
+void sub(double* a, double* b, int size, int shift) {
     for (int i = 0; i < size; i++) {
-        a[i] = a[i] - b[wrank + 1 + i];
+        a[i] = a[i] - b[shift + i];
     }
 }
 
@@ -66,10 +66,10 @@ void const_mult(double n, double* vector, int size) {
     }
 }
 
-bool is_solved(double* A, double* b, double* x, int m, int n, int wrank) {
+bool is_solved(double* A, double* b, double* x, int m, int n, int shift) {
     double* result = create_vector(m);
     matrix_mult(A, x, m, n, result);
-    sub(result, b, m, wrank);
+    sub(result, b, m, shift);
 
     double result_norm = norm(result, m);
     double b_norm = norm(b, m); //idk which norm is OK
@@ -92,14 +92,14 @@ void new_x(double* x, double* result, int size) {
 }
 
 // double* result = solution(A, b, vec_size, rows_num, wsize, wrank);
-double* solution(double* A, double* b, int vec_size, int rows_num, int wsize, int wrank) {
+double* solution(double* A, double* b, int vec_size, int rows_num, int wsize, int shift) {
     double* x = (double*) malloc(rows_num * sizeof(double));
     initialize_vector_value(x, 0.0, rows_num);
 
-    while(!is_solved(A, b, x, rows_num, vec_size, wrank)) {
+    while(!is_solved(A, b, x, rows_num, vec_size, shift)) {
         double* result = create_vector(rows_num);
         matrix_mult(A, x, rows_num, vec_size, result);
-        sub(result, b, rows_num, wrank);
+        sub(result, b, rows_num, shift);
         const_mult(TAU, result, rows_num);
 
         new_x(x, result, rows_num);
@@ -150,7 +150,7 @@ int main(int argc, char** argv) {
     double* A = (double*) malloc(vec_size * rows_num * sizeof(double));
     initialize_matrix(A, vec_size, rows_num, inds[wrank]);
 
-    double* result = solution(A, b, vec_size, rows_num, wsize, wrank);
+    double* result = solution(A, b, vec_size, rows_num, wsize, inds[wrank]);
 
     double* x = create_vector(vec_size);
 
