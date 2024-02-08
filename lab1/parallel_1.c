@@ -4,8 +4,13 @@
 #include <mpi.h>
 #include <math.h>
 
-#define EPSILON 0.1
+#define EPSILON 0.0001
 #define TAU 0.00001
+
+double* create_matrix(int m, int n) {
+    double* matrix = (double*) malloc(m * n * sizeof(double));
+    return matrix;
+}
 
 double* create_vector(int size) {
     double* vector = (double*) malloc(size * sizeof(double));
@@ -91,7 +96,7 @@ void new_x(double* x, double* result, int size, int shift) {
 
 double* solution(double* A, double* b, int vec_size, int rows_num, int wsize, int shift, int* nums, int* inds) {
     double* x = (double*) malloc(vec_size * sizeof(double));
-    initialize_vector_value(x, 0.0, rows_num);
+    initialize_vector_value(x, 0.0, vec_size);
 
     while(!is_solved(A, b, x, rows_num, vec_size, shift)) {
         double* result = create_vector(rows_num);
@@ -102,8 +107,8 @@ double* solution(double* A, double* b, int vec_size, int rows_num, int wsize, in
         new_x(x, result, rows_num, shift);
 
         double* share_x = (double*) malloc(vec_size * sizeof(double));
-        for (int i = 0; i < vec_size; i++) {
-            share_x[i] = x[i];
+        for (int i = 0; i < rows_num; i++) {
+            share_x[i] = x[shift + i];
         }
         MPI_Allgatherv(share_x, rows_num, MPI_DOUBLE, x, nums, inds, MPI_DOUBLE, MPI_COMM_WORLD);
         free(share_x);
@@ -131,8 +136,6 @@ int main(int argc, char** argv) {
     }
     MPI_Bcast(b, vec_size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    int rows_num = vec_size / wsize + ((wrank < (vec_size % wsize)) ? 1 : 0);
-
     int* nums = (int*) malloc(wsize * sizeof(int));
     int* inds = (int*) malloc(wsize * sizeof(int));
 
@@ -145,7 +148,9 @@ int main(int argc, char** argv) {
         inds[i + 1] = nums[i] + inds[i]; 
     }
 
-    double* A = (double*) malloc(vec_size * rows_num * sizeof(double));
+    int rows_num = nums[wrank];
+
+    double* A = create_matrix(rows_num, vec_size);
     initialize_matrix(A, vec_size, rows_num, inds[wrank]);
 
     double* result = solution(A, b, vec_size, rows_num, wsize, inds[wrank], nums, inds);
