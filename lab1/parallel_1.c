@@ -72,14 +72,9 @@ bool is_solved(double* A, double* b, double* x, int m, int n, int shift) {
     sub(result, b, m, shift);
 
     double result_norm = norm(result, m);
-    double b_norm = norm(b, m); //idk which norm is OK
+    double b_norm = norm(b, m);
 
     free(result);
-
-    // printf("%f\n", result_norm / b_norm);
-
-    // printf("res_norm = %f\n", result_norm);
-    // printf("b_norm = %f\n", b_norm);
 
     if ((result_norm / b_norm) < EPSILON) {
         return true;
@@ -88,16 +83,15 @@ bool is_solved(double* A, double* b, double* x, int m, int n, int shift) {
     return false;
 }
 
-void new_x(double* x, double* result, int size) {
+void new_x(double* x, double* result, int size, int shift) {
     for (int i = 0; i < size; i++) {
-        x[i] -= result[i];
+        x[shift + i] -= result[i];
     }
 }
 
-// double* result = solution(A, b, vec_size, rows_num, wsize, wrank);
-double* solution(double* A, double* b, int vec_size, int rows_num, int wsize, int shift) {
+double* solution(double* A, double* b, int vec_size, int rows_num, int wsize, int shift, int* nums, int* inds) {
     double* x = (double*) malloc(vec_size * sizeof(double));
-    initialize_vector_value(x, 0.0, vec_size);
+    initialize_vector_value(x, 0.0, rows_num);
 
     while(!is_solved(A, b, x, rows_num, vec_size, shift)) {
         double* result = create_vector(rows_num);
@@ -105,9 +99,14 @@ double* solution(double* A, double* b, int vec_size, int rows_num, int wsize, in
         sub(result, b, rows_num, shift);
         const_mult(TAU, result, rows_num);
 
-        new_x(x, result, rows_num);
+        new_x(x, result, rows_num, shift);
 
-        // printf("%f %d\n", x[0], wrank);
+        double* share_x = (double*) malloc(vec_size * sizeof(double));
+        for (int i = 0; i < vec_size; i++) {
+            share_x[i] = x[i];
+        }
+        MPI_Allgatherv(share_x, rows_num, MPI_DOUBLE, x, nums, inds, MPI_DOUBLE, MPI_COMM_WORLD);
+        free(share_x);
 
         free(result);
     }
@@ -134,8 +133,6 @@ int main(int argc, char** argv) {
 
     int rows_num = vec_size / wsize + ((wrank < (vec_size % wsize)) ? 1 : 0);
 
-    // printf("rows_num = %d, wrank = %d\n", rows_num, wrank);
-
     int* nums = (int*) malloc(wsize * sizeof(int));
     int* inds = (int*) malloc(wsize * sizeof(int));
 
@@ -148,22 +145,15 @@ int main(int argc, char** argv) {
         inds[i + 1] = nums[i] + inds[i]; 
     }
 
-    // printf("%d %d\n", inds[wrank], wrank);
-
     double* A = (double*) malloc(vec_size * rows_num * sizeof(double));
     initialize_matrix(A, vec_size, rows_num, inds[wrank]);
 
-    double* result = solution(A, b, vec_size, rows_num, wsize, inds[wrank]);
+    double* result = solution(A, b, vec_size, rows_num, wsize, inds[wrank], nums, inds);
 
-    double* x = create_vector(vec_size);
-
-    MPI_Allgatherv(result, rows_num, MPI_DOUBLE, x, nums, inds, MPI_DOUBLE, MPI_COMM_WORLD);
-
-    printf("%f\n", x[0]);
+    printf("%f\n", result[0]);
 
     free(A);
     free(b);
-    free(x);
     free(result);
     free(nums);
     free(inds);
