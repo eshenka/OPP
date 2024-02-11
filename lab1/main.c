@@ -4,8 +4,8 @@
 #include <math.h>
 #include <time.h>
 
-#define N 25000
-#define EPSILON 0.0000000000001
+#define N 20000
+#define EPSILON 0.01
 #define TAU 0.00001
 
 double* create_matrix() {
@@ -70,6 +70,8 @@ bool is_solved(double* A, double* b, double* x) {
 
     free(result);
 
+    // printf("%f\n", result_norm / b_norm);
+
     if ((result_norm / b_norm) < EPSILON) {
         return true;
     }
@@ -123,17 +125,19 @@ int main() {
     clock_t begin;
     clock_t end;
 
-    begin = clock();
+    // begin = clock();
     double* x = solution(A, b);
-    end = clock();
+    // end = clock();
 
-    double total_time = (double)(end - begin) / 1000;
+    // double total_time = (double)(end - begin) / 1000;
 
-    printf("%f seconds", total_time);
+    // printf("%f seconds", total_time);
 
     free(A);
     free(b);
     free(x);
+
+    return 0;
 
 }
 
