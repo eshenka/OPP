@@ -173,12 +173,25 @@ int main(int argc, char** argv) {
     Vector b = create_vector(size, m, inds[wrank]);
     initialize_vector(b, (double) N + 1);
 
+    double min_time;
+
+    double start, stop;
+
+    start = MPI_Wtime();
+
     Vector x = solution(A, b, size, wrank, wsize, nums);
     
     double* result = (double*) malloc(N * sizeof(double));
     MPI_Gatherv(x.data, nums[wrank], MPI_DOUBLE, result, nums, inds, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    if (wrank == 0) printf("%f\n", result[0]);
+    stop = MPI_Wtime();
+
+    double total_time = stop - start;
+    MPI_Reduce(&total_time, &min_time, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+
+    if (wrank == 0) {
+        printf("min time = %f\n", min_time);
+    }
     
     MPI_Finalize();
     return 0;
