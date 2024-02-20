@@ -5,7 +5,7 @@
 #include <math.h>
 #include <string.h>
 
-#define N 15000
+#define N 100
 #define EPSILON 0.000001
 #define TAU 0.00001
 
@@ -105,8 +105,7 @@ double norm(Vector v) {
     return sqrt(all_sum);
 }
 
-bool is_solved(Matrix A, Vector b, Vector x, int wrank, int wsize, int* nums) {
-    Vector result = create_vector(b.size, b.size, b.first);
+bool is_solved(Matrix A, Vector b, Vector x, Vector result, int wrank, int wsize, int* nums) {
     initialize_vector(result, 0.0);
 
     mult_matrix_by_vector_and_sub_vector(A, x, b, result, wrank, wsize, nums);
@@ -125,10 +124,9 @@ Vector solution(Matrix A, Vector b, int max_size, int wrank, int wsize, int* num
     Vector x = create_vector(max_size, b.size, b.first);
     initialize_vector(x, 0.0);
 
-    while(!is_solved(A, b, x, wrank, wsize, nums)) {  
-        Vector result = create_vector(A.m, A.m, 0);
-        initialize_vector(result, 0.0);
-        mult_matrix_by_vector_and_sub_vector(A, x, b, result, wrank, wsize, nums); // A * x - b
+    Vector result = create_vector(A.m, A.m, 0);
+
+    while(!is_solved(A, b, x, result, wrank, wsize, nums)) {  
         mult_vector_by_const(result); // TAU(A * x - b)
         
         sub_vector(x, result); //x = x - TAU(A * x - b)
@@ -136,8 +134,9 @@ Vector solution(Matrix A, Vector b, int max_size, int wrank, int wsize, int* num
         //     printf("%f\n", x.data[0]);
         // }
 
-        free(result.data);
     }
+
+    free(result.data);
 
     return x;
 }
