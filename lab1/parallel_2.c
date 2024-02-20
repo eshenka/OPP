@@ -5,8 +5,8 @@
 #include <math.h>
 #include <string.h>
 
-#define N 8
-#define EPSILON 0.00001
+#define N 15000
+#define EPSILON 0.000001
 #define TAU 0.00001
 
 typedef struct {
@@ -61,8 +61,8 @@ void initialize_vector(Vector v, double value) {
 void mult_matrix_by_vector_and_sub_vector(Matrix A, Vector x, Vector b, Vector result, int wrank, int wsize, int* nums) {
     for (int k = 0; k < wsize; k++) {
         for (int i = 0; i < A.m; i++) {
-            for (int j = x.first; j < x.first + x.size; j++) {
-                result.data[i] += A.data[i * A.n + j] * x.data[j - x.first];
+            for (int j = 0; j < x.size; j++) {
+                result.data[i] += A.data[i * A.n + j + x.first] * x.data[j];
             }
         }
 
@@ -72,13 +72,8 @@ void mult_matrix_by_vector_and_sub_vector(Matrix A, Vector x, Vector b, Vector r
                             123, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 
         x.first = (x.first + x.size) % N;
-        x.size = nums[(wrank + wsize - k) % wsize];
+        x.size = nums[(wrank + k + 1) % wsize];
     }
-
-    MPI_Sendrecv_replace(x.data, nums[0], MPI_DOUBLE, 
-                        (wrank + 1) % wsize, 123, 
-                        (wrank + wsize - 1) % wsize,
-                        123, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 
     for (int i = 0; i < A.m; i++) {
         result.data[i] -= b.data[i];
@@ -107,7 +102,7 @@ double norm(Vector v) {
 
     MPI_Allreduce(&sum, &all_sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-    return sqrt(sum);
+    return sqrt(all_sum);
 }
 
 bool is_solved(Matrix A, Vector b, Vector x, int wrank, int wsize, int* nums) {
@@ -137,6 +132,9 @@ Vector solution(Matrix A, Vector b, int max_size, int wrank, int wsize, int* num
         mult_vector_by_const(result); // TAU(A * x - b)
         
         sub_vector(x, result); //x = x - TAU(A * x - b)
+        // if (wrank == 0) {
+        //     printf("%f\n", x.data[0]);
+        // }
 
         free(result.data);
     }
