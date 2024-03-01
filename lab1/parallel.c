@@ -79,7 +79,7 @@ int* create_indices(int* sizes, int wsize) {
 void multiply_matrix_by_vector(Matrix A, Vector x, Vector result, int M, int wrank, int wsize, int* sizes) {
     for (int k = 0; k < wsize; k++) {
         for (int i = 0; i < M; i++) {
-            for (int j = x.index; j < x.index + x.len; j++) {
+            for (int j = x.index; j < x.len; j++) {
                 result.vector[i] += A.matrix[i * N + j] * x.vector[j];
             }
         }

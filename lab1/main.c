@@ -3,8 +3,9 @@
 #include <stdbool.h>
 #include <math.h>
 #include <time.h>
+#include <omp.h>
 
-#define N 20000
+#define N 10000
 #define EPSILON 0.01
 #define TAU 0.00001
 
@@ -43,8 +44,11 @@ double* sub(double* a, double* b) {
 
 double* matrix_mult(double* matrix, double* vector) {
     double* result = create_vector();
+    // omp_set_dynamic(0);
+    #pragma omp parallel for num_threads(4)
     for (int i = 0; i < N; i++) {
         int sum = 0;
+        #pragma omp parallel for num_threads(4)
         for (int j = 0; j < N; j++) {
             sum += matrix[i * N + j] * vector[j];
         }
@@ -90,7 +94,7 @@ double* solution(double* A, double* b) {
         const_mult(TAU, result);
 
         x = sub(x, result);
-        printf("%f\n", x[0]);
+        // printf("%f\n", x[0]);
 
         free(result);
     }
@@ -128,6 +132,7 @@ int main() {
     // begin = clock();
     double* x = solution(A, b);
     // end = clock();
+    printf("%f\n", x[0]);
 
     // double total_time = (double)(end - begin) / 1000;
 

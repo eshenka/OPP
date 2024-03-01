@@ -7,8 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define N 1000
-#define EPSILON 0.0001
+#define N 9000
+#define EPSILON 0.00000000001
 #define TAU 0.00001
 
 double* create_matrix(int m) {
