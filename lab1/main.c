@@ -5,8 +5,8 @@
 #include <time.h>
 #include <omp.h>
 
-#define N 10000
-#define EPSILON 0.01
+#define N 100
+#define EPSILON 0.0001
 #define TAU 0.00001
 
 double* create_matrix() {
@@ -19,7 +19,7 @@ double* create_vector() {
     return vector;
 }
 
-void initialize_vector_spec(double* b, double value) {
+void initialize_vector(double* b, double value) {
     for (int i = 0; i < N; i++) {
         b[i] = value;
     }
@@ -27,6 +27,7 @@ void initialize_vector_spec(double* b, double value) {
 
 double norm(double* vector) {
     double init_norm = 0;
+    
     for (int i = 0; i < N; i++) {
         init_norm += vector[i] * vector[i];
     }
@@ -34,28 +35,21 @@ double norm(double* vector) {
     return sqrt(init_norm);
 }
 
-double* sub(double* a, double* b) {
-    double* result = create_vector();
+double* sub(double* a, double* b, double* result) {
     for (int i = 0; i < N; i++) {
         result[i] = a[i] - b[i];
     }
-    return result;
 }
 
-double* matrix_mult(double* matrix, double* vector) {
-    double* result = create_vector();
-    // omp_set_dynamic(0);
-    #pragma omp parallel for num_threads(4)
+double* matrix_mult(double* matrix, double* vector, double* result) {
     for (int i = 0; i < N; i++) {
         int sum = 0;
-        #pragma omp parallel for num_threads(4)
         for (int j = 0; j < N; j++) {
             sum += matrix[i * N + j] * vector[j];
         }
 
         result[i] = sum;
     }
-    return result;
 }
 
 void const_mult(double n, double* vector) {
@@ -64,17 +58,12 @@ void const_mult(double n, double* vector) {
     }
 }
 
-bool is_solved(double* A, double* b, double* x) {
-    double* result = create_vector();
-    result = matrix_mult(A, x);
-    result = sub(result, b);
+bool is_solved(double* A, double* b, double* x, double* result) {
+    matrix_mult(A, x, result);
+    sub(result, b, result);
 
     double result_norm = norm(result);
     double b_norm = norm(b);
-
-    free(result);
-
-    // printf("%f\n", result_norm / b_norm);
 
     if ((result_norm / b_norm) < EPSILON) {
         return true;
@@ -84,21 +73,17 @@ bool is_solved(double* A, double* b, double* x) {
 }
 
 double* solution(double* A, double* b) {
+    double* result = create_vector();
     double* x = create_vector();
-    initialize_vector_spec(x, 0.0);
+    initialize_vector(x, 0.0);
 
-    while(!is_solved(A, b, x)) {
-        double* result = create_vector();
-        result = matrix_mult(A, x);
-        result = sub(result, b);
+    while(!is_solved(A, b, x, result)) {
         const_mult(TAU, result);
 
-        x = sub(x, result);
-        // printf("%f\n", x[0]);
-
-        free(result);
+        sub(x, result, x);
     }
 
+    free(result);
     return x;
 }
 
@@ -112,37 +97,23 @@ void initialize_matrix(double* A) {
     }
 }
 
-void initialize_vector(double* b) {
-    for (int i = 0; i < N; i++) {
-        b[i] = (double)N + 1;
-    }
-}
-
 int main() {
     double* A = create_matrix();
     initialize_matrix(A);
 
     double* b = create_vector();
-    initialize_vector(b);
-
+    initialize_vector(b, (double)N + 1);
 
     clock_t begin;
     clock_t end;
 
-    // begin = clock();
     double* x = solution(A, b);
-    // end = clock();
     printf("%f\n", x[0]);
-
-    // double total_time = (double)(end - begin) / 1000;
-
-    // printf("%f seconds", total_time);
 
     free(A);
     free(b);
     free(x);
 
     return 0;
-
 }
 
