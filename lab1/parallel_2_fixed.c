@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define N 9000
+#define N 100
 #define EPSILON 0.00000000001
 #define TAU 0.00001
 
@@ -200,7 +200,14 @@ int main(int argc, char** argv) {
     if (wrank == 0) {
         printf("min time = %f\n", min_time);
     }
+    
+    free(A.data);
+    free(b.data);
+    free(nums);
+    free(inds);
+    free(x.data);
 
     MPI_Finalize();
     return 0;
 }
+

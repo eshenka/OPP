@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define N 9000
+#define N 100
 #define EPSILON 0.00000000001
 #define TAU 0.00001
 
@@ -188,3 +188,4 @@ int main(int argc, char** argv) {
 
     MPI_Finalize();
 }
+

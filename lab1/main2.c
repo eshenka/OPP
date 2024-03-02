@@ -21,34 +21,6 @@ int main() {
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // int main() {
 //     int size = 14;
 //     int rank = 0;
@@ -77,14 +49,3 @@ int main() {
 //         printf("%d %d", beg, end);
 //     }
 // }
-
-
-
-
-
-
-
-
-
-
-
